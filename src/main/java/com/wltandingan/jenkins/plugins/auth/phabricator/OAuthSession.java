@@ -31,7 +31,6 @@ public abstract class OAuthSession {
      * Starts the login session.
      */
     HttpResponse doCommenceLogin() throws IOException {
-
         // remember this in the session
         Stapler.getCurrentRequest().getSession().setAttribute(SESSION_NAME, this);
 
@@ -47,17 +46,21 @@ public abstract class OAuthSession {
     HttpResponse doFinishLogin(StaplerRequest request) throws IOException {
         final String state = request.getParameter("state");
 
+        if (state == null) {
+            // user not sent from Phabricator
+            return HttpResponses.redirectToContextRoot();
+        }
+
         if (!uuid.equals(state)) {
             return HttpResponses.error(401, "State is invalid");
         }
 
         final String authorizationCode = request.getParameter("code");
-
         if (authorizationCode == null) {
             return HttpResponses.error(404, "Missing authorization code");
-        } else {
-            return onSuccess(authorizationCode);
         }
+
+        return onSuccess(authorizationCode);
     }
 
     protected OAuth20Service getOAuth() {
